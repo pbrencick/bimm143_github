@@ -1,0 +1,187 @@
+---
+title: "Class06: R Functions"
+author: "Paul Brencick (PID:A17668863)"
+format: pdf
+toc: True
+---
+
+## Background
+
+Function are important for everything that we do in R. Everything we do involves calling and using functions (from data input, analysis, to results)
+
+All functions in R have at least 3 things:
+
+1. A **name**; the thing that you use to call a function.
+2. One or more input **arguments** that are comma separated. 
+3. The **body**; lines of code between curly brackets { } which do the work of the function.
+
+## Our First Function
+
+We are going to write a dumb function to add some numbers even though it already exist:
+
+```{r}
+add <- function(shlop) {
+  shlop + 1
+}
+```
+
+Lets try it out!
+
+```{r}
+add(100)
+```
+
+Will this work??
+
+```{r}
+add(c(100,200,300))
+```
+
+Modified version that is more useful to add more than just 1:
+
+```{r}
+add <- function(shlop,gap=1) {
+  shlop + gap
+}
+```
+
+
+```{r}
+add(100, 10)
+```
+
+Will this still work??
+
+```{r}
+add(100)
+```
+
+**N.B** Input arguments can either be **required** or **optional**. Optional ones contain a default, which is a fall-back specified in the function code with an equal signs. 
+
+```{r}
+#add(30,100, 400)
+```
+
+## Lets do another function :)
+
+All functions in R look like this:
+
+```
+name <- function(argument) {
+ body
+}
+```
+
+The `sample()` function in R randomly selects a value from within a collection or a range. It randomly shuffles the elements of x and picks the amount specified by size.  
+
+```{r}
+sample(1:10, size = 4)
+```
+
+>Q. Return 12 numbers picked randomly from the imput 1:10
+
+```{r}
+sample(1:10, size = 12, replace = T)
+```
+
+> Q. Write the code to generate a random 12 nucleotide long DNA sequence.
+
+```{r}
+bases <- c("A","T","C","G")
+sample(bases,12,T)
+```
+
+>Q. Write a first verion function called `generate_dna()` which generates a user specified length `n` random DNA sequence?
+
+```{r}
+generate_dna <- function(size=6) {
+ bases <- c("A","T","C","G")
+ sample(bases,size,T)
+}
+```
+
+Lets try it out:
+
+```{r}
+generate_dna(20)
+```
+
+>Q. Modify your function to return a FASTA like sequence rather than "G" "A" "C" "A", we want "GTACT"
+
+```{r}
+generate_dna <- function(size=6) {
+ bases <- c("A","T","C","G")
+ ans <- paste(sample(bases,size,T), collapse="")
+ return(ans)
+}
+```
+
+```{r}
+generate_dna(6)
+```
+
+>Q. Give the user an option ot return FASTA format output sequence or standard multi-element vector format?
+
+```{r}
+generate_dna <- function(size=6, fasta=T) {
+ bases <- c("A","T","C","G")
+ ans <- paste(sample(bases,size,T), collapse="")
+ 
+ if (fasta) {
+   return(ans)
+ } else {
+   return(sample(bases,size,T))
+ }
+ return(ans)
+}
+```
+
+```{r}
+generate_dna(10,T)
+generate_dna(10, F)
+```
+
+## A new cool function
+
+>Q. Write a function called `generate_protein()` that generates a user specified length of protein sequence in FASTA like format?
+
+```{r}
+generate_protein <- function(n) {
+  aa <- c("A","C","D","E","F","G","H","I","K","L",
+          "M","N","P","Q","R","S","T","V","W","Y")
+  seq <- paste(sample(aa, n, replace = TRUE), collapse = "")
+  return(seq)
+}
+```
+
+```{r}
+generate_protein(10)
+```
+
+>Q. Use your new `generate_protein()` function to generate sequences between length 6 and 12 amino-acids and check if any of there are unique in nature (i.e found in the NR database at NCBI)?
+
+```{r}
+generate_protein <- function(n) {
+  aa <- c("A","C","D","E","F","G","H","I","K","L",
+          "M","N","P","Q","R","S","T","V","W","Y")
+  seq <- paste(sample(aa, n, replace = TRUE), collapse = "")
+  return(seq)
+}
+
+proteins <- data.frame(
+  length = 6:12,
+  sequence = sapply(6:12, generate_protein)
+)
+
+proteins
+```
+
+Or we could do a `for()` loop:
+
+```{r}
+for(i in 6:12){
+  cat(">",i,sep="", "\n")
+  cat(generate_protein(i),"\n")
+}
+```
+
