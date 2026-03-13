@@ -1,0 +1,43 @@
+---
+title: "Class 19: Cancer Mutation Analysis"
+author: "Paul Brencick (A17668863)"
+format: html
+---
+
+## Background
+
+We are given the DNA from a tumor that is sequenced and are trying to compare the sequence to normal tissue. We are doing this to ensure that the detected differences are not germline mutation. 
+
+```{r}
+library(bio3d)
+
+seq <- read.fasta("A17668863_mutant_seq.fa")
+
+
+```
+
+
+```{r}
+ref   <- seq$ali[1, ]
+query <- seq$ali[2, ]
+
+diffs <- which(ref != query)
+paste0(seq$ali[1,diffs], diffs, seq$ali[2,diffs])
+```
+
+```{r}
+s <- conserv(seq)
+
+dif <- which(s != 1)
+dif
+
+```
+
+```{r}
+paste0(seq$ali[1,dif], dif, seq$ali[2,dif])
+```
+
+```{r}
+seq
+```
+

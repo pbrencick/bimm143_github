@@ -1,0 +1,21 @@
+# Class 16: Downstream analysis
+Paul Brencick (A17668863)
+
+## Background
+
+We just finished up comparing our RNA-seq data via **Kallisto**! We did
+this all on a AWS instance within Unix as our computures and internet
+are way too slow to do it locally. We ran our data through these
+comparisons, then exported the results back to our PCS and now we are
+here. We can now use R and Bioconductor tools to explore this data.
+
+``` r
+library(tximport)
+
+folders <- dir(pattern="SRR21568*")
+samples <- sub("_quant", "", folders)
+files <- file.path( folders, "abundance.h5" )
+names(files) <- samples
+
+#txi.kallisto <- tximport(files, type = "kallisto", txOut = TRUE)
+```
