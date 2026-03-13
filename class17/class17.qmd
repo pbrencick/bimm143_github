@@ -1,0 +1,112 @@
+---
+title: "Class 16: Downstream analysis"
+author: "Paul Brencick (A17668863)"
+format: pdf
+toc: TRUE
+---
+
+## Background
+
+We just finished up comparing our RNA-seq data via **Kallisto**! We did this all on a AWS instance within Unix as our computers and internet are way too slow to do it locally. We ran our data through these comparisons, then exported the results back to our laptops and now we are here... We can now use R and Bioconductor tools to explore this data ever further. 
+
+## Analysis of Kallisto Data via tximport
+
+```{r}
+# First you have to install tximport via BiocManager::install() in your console to work
+library(tximport)
+
+folders <- dir(pattern="SRR21568*")
+samples <- sub("_quant", "", folders)
+files <- file.path( folders, "abundance.h5" )
+names(files) <- samples
+
+txi.kallisto <- tximport(files, type = "kallisto", txOut = TRUE)
+```
+
+Lets take a peak of what we got here!
+
+```{r}
+head(txi.kallisto$counts)
+```
+
+## Cleaning up our Data
+
+Lets see how many transcripts we have for each sample and the amount of transcripts with at least one sample
+
+```{r}
+colSums(txi.kallisto$counts)
+```
+
+```{r}
+sum(rowSums(txi.kallisto$counts)>0)
+```
+
+Since it is clear that many of these transcripts don't have a single read, lets remove them.
+
+```{r}
+to.keep <- rowSums(txi.kallisto$counts) > 0
+kset.nonzero <- txi.kallisto$counts[to.keep,]
+keep2 <- apply(kset.nonzero,1,sd)>0
+x <- kset.nonzero[keep2,]
+```
+
+## Principal Component Analysis
+
+Lets do some exploratory analysis technique to this counts matrix. Remember we need to scale everything so each feature contributes equally. 
+
+```{r}
+pca <- prcomp(t(x), scale=TRUE)
+```
+
+```{r}
+summary(pca)
+```
+
+Lets make a plot via `plot()` to visualize our results 
+
+```{r}
+plot(pca$x[,1], pca$x[,2],
+     col=c("blue","blue","red","red"),
+     xlab="PC1", ylab="PC2", pch=16)
+```
+
+Boooo, that other graph looks so boring, it needs some labels and a better theme overall. Lets make it look better with some `ggplot()`
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+
+mycols <- c("blue","blue","red","red")
+
+ggplot(pca$x) +
+  aes(PC1, PC2, label=rownames(pca$x)) +
+  geom_point( col=mycols ) +
+  geom_text_repel( col=mycols, box.padding = 0.8,
+                  point.padding = 0.8) +
+  theme_minimal() +
+  labs(title = "PC1 vs PC2")
+```
+
+```{r}
+ggplot(pca$x) +
+  aes(PC1, PC3, label=rownames(pca$x)) +
+  geom_point( col=mycols ) +
+  geom_text_repel( col=mycols ) +
+  theme_minimal() +
+  labs(title = "PC1 vs PC3")
+```
+
+```{r}
+ggplot(pca$x) +
+  aes(PC2, PC3, label=rownames(pca$x)) +
+  geom_point( col=mycols ) +
+  geom_text_repel( col=mycols ) +
+  theme_minimal() +
+  labs(title = "PC2 vs PC3")
+```
+
+- **PC1** separates the results by two control samples and the two enhancer-targeting Crispr-Cas9
+- **PC2** separates the two control samples from each other
+- **PC3** separates the two enhancer-targeting CRISPR samples from one another
+
+

@@ -1,0 +1,69 @@
+---
+title: "Class 13: Transcriptomics and the analysis of RNA-Seq data"
+author: "Paul Brencick (A17668863)"
+format: html
+toc: True
+---
+
+## Background
+
+Today we will perform an RNA seq analysis on the effects of Dexamethasone (hereafter "Dex"), a common steroid, on airway smooth muscles (ASM) cell lines.
+
+## Data Import
+
+We need two things for this analysis:
+
+- **countData**: a table with genes as rows and samples/experiments as columns 
+- **colData**: metadata about the columns (i.e. samples) in the main countData objects
+
+```{r import}
+counts <- read.csv("airway_scaledcounts.csv", row.names=1)
+metadata <- read.csv("airway_metadata.csv")
+```
+
+Now lets have a peak at the data:
+
+```{r}
+head(metadata)
+```
+
+```{r}
+head(counts)
+```
+
+## Check on metadata counts corespondance 
+
+We need to check that the metadata matches the samlples in our count data. 
+
+```{r}
+ncol(counts) == nrow(metadata)
+```
+
+```{r}
+colnames(counts)
+metadata$id
+```
+
+> Q1. How many genes are in this dataset? 
+
+```{r}
+nrow(counts)
+```
+
+
+> Q2. How many ‘control’ cell lines do we have? 
+
+```{r}
+sum(metadata$dex == "control")
+```
+
+## Analysis Plan..
+
+We have 4 replicates per conditions ("control" and "treated"). We want to compare the control vs the treated to see which genes expression levels change when we have the drug present. 
+
+We can go down each gene and see if the average values in control collumn is different than the average treated collumn. 
+
+1. Find which columns in `counts()` correspond to "control" samples
+2. 
+
+

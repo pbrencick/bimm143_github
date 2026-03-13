@@ -1,0 +1,99 @@
+---
+title: "Find A Gene"
+format: html
+---
+
+```{r}
+library(bio3d)
+aln <- read.fasta("muscle-I20260305-045056-0248-50701218-p1m.fa")
+aln
+aln$ali[1, 1:50]
+```
+
+
+```{r}
+id <- seqidentity(aln)  
+id_pct <- id * 100       
+id_pct_round <- round(id_pct, 1)
+d <- as.dist(1 - id)
+hc <- hclust(d, method = "average")
+```
+
+```{r}
+par(mar = c(10, 10, 3, 2))  # big margins so labels fit
+heatmap(
+  id,
+  Rowv = as.dendrogram(hc),
+  Colv = as.dendrogram(hc),
+  scale = "none",
+  margins = c(12, 12),
+  cexRow = 0.9,
+  cexCol = 0.9,
+  main = "Sequence identity heatmap"
+)
+```
+
+```{r}
+par(oma=c(0, 3, 3, 0))
+aln <- read.fasta("muscle-I20260309-052030-0787-65651755-p1m.fa")
+ide_matrix <- seqidentity(aln)
+heatmap(ide_matrix,
+        margins = c(10, 10), 
+        cexRow = 0.7,        
+        cexCol = 0.7) 
+
+```
+
+
+```{r}
+
+```
+
+```{r}
+cons <- consensus(aln)
+print(cons$seq)
+blast_results <- blast.pdb(cons$seq)
+head(blast_results$hit.tbl)
+plot.blast(blast_results)
+```
+
+```{r}
+hits <- blast_results$hit.tbl
+hits$structureId <- substr(hits$pdb.id, 1, 4)
+unique_hits <- hits[!duplicated(hits$structureId), ]
+top8 <- head(unique_hits, 8)
+print(top8[, c("pdb.id", "evalue", "identity")])
+ids_to_annotate <- top8$pdb.id
+anno <- pdb.annotate(ids_to_annotate)
+
+print(anno[, c("structureId", "experimentalTechnique", "resolution", "source")])
+```
+
+```{r}
+cons <- consensus(aln)
+conserved_positions <- which(cons$freq >= 0.8)
+print(conserved_positions)
+```
+
+```{r}
+results_dir <- "novelprotein_564e8/"
+aln_file <- list.files(path=results_dir,
+                       pattern=".a3m$",
+                        full.names = TRUE)
+aln_file
+```
+
+```{r}
+aln <- read.fasta(aln_file[1], to.upper = TRUE)
+dim(aln$ali)
+sim <- conserv(aln)
+con <- consensus(aln, cutoff = 0.70)
+con$seq
+```
+
+```{r}
+m1.pdb <- read.pdb(pdb_files[1])
+occ <- vec2resno(c(sim[1:99], sim[1:99]), m1.pdb$atom$resno)
+write.pdb(m1.pdb, o=occ, file="m1_conserv.pdb")
+```
+

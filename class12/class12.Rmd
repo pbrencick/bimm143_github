@@ -1,0 +1,61 @@
+---
+title: "Class 12"
+output: html_document
+date: "2026-02-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Section 1 - Proportion og G/G in a population
+
+Download a CSV file from Ensemble < https://www.ensembl.org/Homo_sapiens/Variation/Sample?db=core;r=17:39895033-39895160;v=rs8067378;vdb=variation;vf=959672880#373531_tablePanel >
+
+Here we read the CSV file
+
+```{r}
+mxl <- read.csv("373531-SampleGenotypes-Homo_sapiens_Variation_Sample_rs8067378.csv")
+head(mxl)
+```
+
+```{r}
+table(mxl$Genotype..forward.strand.)
+```
+
+```{r}
+table(mxl$Genotype..forward.strand.) / nrow(mxl) * 100
+```
+
+Now lets look at a different population. I picked GBR population "great britan"
+
+```{r}
+gbr <- read.csv("373522-SampleGenotypes-Homo_sapiens_Variation_Sample_rs8067378.csv")
+head(gbr)
+```
+
+Find proportion of G|G
+
+```{r}
+table(gbr$Genotype..forward.strand.)
+
+```
+
+```{r}
+round(table(gbr$Genotype..forward.strand.) / nrow(gbr) * 100, 2)
+```
+
+This variant that is associated with childhood asthma is more frequent in the GBR population than the MXL
+
+Now lets dig into this further!
+
+
+```{r}
+library(ggplot2)
+ggplot(mtcars) + aes(x=mpg, y=disp) + geom_point()
+```
+
+```{r}
+ggplot(mtcars, aes(mpg, disp)) + geom_point()
+```
+

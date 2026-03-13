@@ -1,0 +1,238 @@
+---
+title: "Class 13: Transcriptomics and the analysis of RNA-Seq data"
+author: "Paul Brencick (A17668863)"
+format: pdf
+toc: True
+---
+
+## Background
+
+Today we will perform an RNA seq analysis on the effects of Dexamethasone (hereafter "Dex"), a common steroid, on airway smooth muscles (ASM) cell lines.
+
+## Data Import
+
+We need two things for this analysis:
+
+- **countData**: a table with genes as rows and samples/experiments as columns 
+- **colData**: metadata about the columns (i.e. samples) in the main countData objects
+
+```{r import}
+counts <- read.csv("airway_scaledcounts.csv", row.names=1)
+metadata <- read.csv("airway_metadata.csv")
+```
+
+Now lets have a peak at the data:
+
+```{r}
+head(metadata)
+```
+
+```{r}
+head(counts)
+```
+
+## Check on metadata counts corespondance 
+
+We need to check that the metadata matches the samlples in our count data. 
+
+```{r}
+ncol(counts) == nrow(metadata)
+```
+
+```{r}
+colnames(counts)
+metadata$id
+```
+
+> Q1. How many genes are in this dataset? 
+
+```{r}
+nrow(counts)
+```
+
+
+> Q2. How many ‘control’ cell lines do we have? 
+
+```{r}
+sum(metadata$dex == "control")
+```
+
+## Analysis Plan..
+
+We have 4 replicates per conditions ("control" and "treated"). We want to compare the control vs the treated to see which genes expression levels change when we have the drug present. 
+
+We can go down each gene and see if the average values in control column is different than the average treated column. 
+
+1. Find which columns in `counts()` correspond to "control" samples
+2. Extract/select these columns
+3. Calculate an average value for each gene (i.e each row)
+
+```{r}
+# The indices (aka positions) that are "control"
+control.inds <- metadata$dex == "control"
+```
+
+```{r}
+# Extract/select these "control" columns from counts
+control.counts <- counts[,control.inds]
+```
+
+```{r}
+# Calculate the mean for each gene (i.e row)
+control.means <- rowMeans(control.counts)
+```
+
+>Q Do the same for the "treated" samples - Find the mean count value per gene
+
+```{r}
+# The indices (aka positions) that are "treated"
+treated.inds <- metadata$dex == "treated"
+```
+
+```{r}
+# Extract/select these "treated" columns from counts
+treated.counts <- counts[,treated.inds]
+```
+
+```{r}
+# Calculate the mean for each gene (i.e row)
+treated.means <- rowMeans(treated.counts)
+```
+
+Lets put these two mean values into a new data.frame, `meancounts`, for easy book keeping.
+
+```{r}
+meancounts <- data.frame(control.means,
+                         treated.means)
+head(meancounts)
+```
+
+>Q. Make a ggplot of average counts vs treated
+
+```{r}
+library(ggplot2)
+ggplot(meancounts) +
+  aes(x = control.means, y = treated.means) +
+  geom_point(alpha=0.3) 
+```
+
+This is screaming to be log transformed as it is so highly skewed...
+
+```{r}
+ggplot(meancounts) +
+  aes(x = control.means, y = treated.means) +
+  geom_point(alpha=0.3) +
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+## Log2 units and fold change
+
+If we considered "treated"/"control" counts we will get a number that tells us the change.
+
+```{r}
+# No change
+log2(20/20)
+```
+
+```{r}
+# A doubling in the treated vs control
+log2(40/20)
+```
+
+```{r}
+log2(10/20)
+```
+
+> Q. Add a new column called `log2fc` for log2 fold change of treated/control to our `meancounts` object.
+
+```{r}
+meancounts$log2fc <- 
+  log2(meancounts$treated.mean/
+  meancounts$control.mean)
+head(meancounts)
+```
+
+
+## Remove zero count genes
+
+Typically we would not consider zero count genes - as we have no data bout them and they should be excluded from further consideration. These lead to "funky" log2 fold change values 9e.g. divide by zero errors ect.)
+
+## DESeq analysis
+
+We are missing any measure of significance from the work we have so far. Let's do this properly with **DESeq2** package.
+
+```{r, message=FALSE}
+library(DESeq2)
+```
+
+The DESeq2 package, like many bioconductor packages, want its imput in a very specific way - a data structure setup with all the info it needs for the calculations. 
+
+```{r}
+dds <- DESeqDataSetFromMatrix(countData = counts,
+                       colData = metadata,
+                       design = ~dex)
+```
+
+The main function in this package is called `DESeq()` it will run the full analysis for us on our `dds` imput object:
+
+```{r}
+dds <- DESeq(dds)
+```
+
+Exrtract our results:
+```{r}
+res <- results(dds)
+head(res)
+```
+
+## Volcano Plot
+
+A useful summary figure of our results is often called a volcano plot. Its basically a plot of log2 fold change values vs Adjusted P-values  
+
+
+>Q. Use ggplot to make a first version "volcano plot" of `log2FoldChange` vs `padj`
+
+```{r}
+ggplot(res) +
+  aes(log2FoldChange,padj) +
+  geom_point()
+```
+
+This is not very useful because the y-axis(P-value) is not really helpful - we want to focus on low P-values
+
+```{r}
+ggplot(res) +
+  aes(log2FoldChange,-log(padj)) +
+  geom_point() +
+  geom_vline(xintercept = c(-2, 2), color="red") +
+  geom_hline(yintercept = -log(0.05),col="red")
+```
+
+## Add some plot annotaion
+
+> Q. Add color to the points (genes) we care about, nice axis labels, and a useful title and a nice theme. 
+
+```{r}
+mycols <- rep("gray", nrow(res))
+mycols[res$log2FoldChange >2] <- "blue"
+mycols[res$log2FoldChange < -2] <- "darkgreen"
+mycols[res$padj >= 0.05] <- "gray"
+```
+
+
+```{r}
+ggplot(res) +
+  aes(log2FoldChange,-log(padj)) +
+  geom_point(col=mycols) +
+  geom_vline(xintercept = c(-2, 2), color="red") +
+  geom_hline(yintercept = -log(0.05),col="red")
+```
+
+
+## Save our results to a CSV file
+
+```{r}
+write.csv(res,file="results.csv")
+```
+
